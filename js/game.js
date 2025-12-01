@@ -195,8 +195,14 @@ class Game {
         this.lastTime = performance.now();
         this.loadingScreen = document.getElementById('loadingScreen');
         
+        // Кнопки
+        this.restartButton = document.getElementById('restartButton');
+        this.nextLevelButton = document.getElementById('nextLevelButton');
+        this.enhancedButton = document.getElementById('enhancedButton');
+        
         this.loadLevel(1);
         this.setupEventListeners();
+        this.setupButtons();
         this.hideLoadingScreen();
         this.gameLoop();
     }
@@ -213,8 +219,11 @@ class Game {
         this.canvas.addEventListener('mousedown', (e) => this.handleMouseDown(e));
         this.canvas.addEventListener('mousemove', (e) => this.handleMouseMove(e));
         
-        // Обработка клавиатуры - привязываем к document для надежности
-        document.addEventListener('keydown', (e) => this.handleKeyDown(e));
+        // Обработка клавиатуры - используем несколько способов для надежности
+        const keyHandler = (e) => this.handleKeyDown(e);
+        document.addEventListener('keydown', keyHandler);
+        window.addEventListener('keydown', keyHandler);
+        this.canvas.addEventListener('keydown', keyHandler);
         
         // Убеждаемся, что canvas может получать фокус для клавиатуры
         this.canvas.setAttribute('tabindex', '0');
@@ -226,9 +235,51 @@ class Game {
         });
         
         // Фокус при загрузке
-        window.addEventListener('load', () => {
+        if (document.readyState === 'complete') {
             setTimeout(() => this.canvas.focus(), 100);
+        } else {
+            window.addEventListener('load', () => {
+                setTimeout(() => this.canvas.focus(), 100);
+            });
+        }
+    }
+    
+    setupButtons() {
+        // Кнопка перезапуска
+        this.restartButton.addEventListener('click', () => {
+            this.loadLevel(this.currentLevel);
         });
+        
+        // Кнопка следующего уровня
+        this.nextLevelButton.addEventListener('click', () => {
+            if (this.gameState === GameState.WIN) {
+                this.currentLevel = Math.min(10, this.currentLevel + 1);
+                this.loadLevel(this.currentLevel);
+            }
+        });
+        
+        // Кнопка усиленных связей
+        this.enhancedButton.addEventListener('click', () => {
+            if (this.agent.canUseEnhancedConnections()) {
+                this.enhancedMode = !this.enhancedMode;
+                this.updateEnhancedButton();
+            }
+        });
+    }
+    
+    updateEnhancedButton() {
+        if (this.agent.canUseEnhancedConnections()) {
+            this.enhancedButton.style.display = 'block';
+            if (this.enhancedMode) {
+                this.enhancedButton.textContent = '⚡ Усиленные ВКЛ (E)';
+                this.enhancedButton.style.background = 'rgba(0, 200, 255, 0.4)';
+            } else {
+                this.enhancedButton.textContent = '⚡ Усиленные ВЫКЛ (E)';
+                this.enhancedButton.style.background = 'rgba(0, 200, 200, 0.2)';
+            }
+        } else {
+            this.enhancedButton.style.display = 'none';
+        }
     }
     
     handleMouseDown(e) {
@@ -256,38 +307,40 @@ class Game {
     }
     
     handleKeyDown(e) {
-        const key = e.key.toLowerCase();
-        
-        // R - перезапуск уровня (всегда работает)
-        if (key === 'r') {
-            e.preventDefault();
-            e.stopPropagation();
-            console.log('Перезапуск уровня', this.currentLevel);
-            this.loadLevel(this.currentLevel);
+        // Игнорируем, если пользователь вводит текст в поле ввода
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
             return;
         }
         
+        const key = e.key.toLowerCase();
+        
+        // R - перезапуск уровня (всегда работает)
+        if (key === 'r' || key === 'к' || e.keyCode === 82) {
+            e.preventDefault();
+            e.stopPropagation();
+            this.loadLevel(this.currentLevel);
+            return false;
+        }
+        
         // N - следующий уровень (только после победы)
-        if (key === 'n') {
+        if (key === 'n' || key === 'т' || e.keyCode === 78) {
             if (this.gameState === GameState.WIN) {
                 e.preventDefault();
                 e.stopPropagation();
                 const nextLevel = Math.min(10, this.currentLevel + 1);
-                console.log('Переход на уровень', nextLevel);
                 this.currentLevel = nextLevel;
                 this.loadLevel(this.currentLevel);
-            } else {
-                console.log('Сначала пройдите уровень!');
             }
-            return;
+            return false;
         }
         
         // E - переключение режима усиленных связей
-        if (key === 'e' && this.agent.canUseEnhancedConnections()) {
+        if ((key === 'e' || key === 'у' || e.keyCode === 69) && this.agent.canUseEnhancedConnections()) {
             e.preventDefault();
             e.stopPropagation();
             this.enhancedMode = !this.enhancedMode;
-            console.log('Режим усиленных связей:', this.enhancedMode ? 'ВКЛ' : 'ВЫКЛ');
+            this.updateEnhancedButton();
+            return false;
         }
     }
     
@@ -508,6 +561,10 @@ class Game {
         this.hoverNode = null;
         this.gameState = GameState.PLAYING;
         this.destructionEffects = [];
+        
+        // Обновляем видимость кнопок
+        this.nextLevelButton.style.display = 'none';
+        this.updateEnhancedButton();
     }
     
     update(dt) {
@@ -516,6 +573,7 @@ class Game {
                 this.timeLeft -= dt / 1000.0;
                 if (this.timeLeft <= 0) {
                     this.gameState = GameState.LOSE;
+                    this.nextLevelButton.style.display = 'none';
                     return;
                 }
             }
@@ -551,12 +609,14 @@ class Game {
             const startNode = this.nodes.find(n => n.type === "start");
             if (startNode && startNode.type === "virus") {
                 this.gameState = GameState.LOSE;
+                this.nextLevelButton.style.display = 'none';
             }
             
             if (this.checkVictory()) {
                 this.gameState = GameState.WIN;
                 this.starsEarned = this.calculateStars();
-                console.log('Победа! Нажмите N для следующего уровня');
+                this.nextLevelButton.style.display = 'block';
+                console.log('Победа! Нажмите N или кнопку для следующего уровня');
             }
         }
     }
