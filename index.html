@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Синапсис - Агент 22</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: #0a0a1a;
+            color: #fff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+        
+        #gameContainer {
+            position: relative;
+            width: 1200px;
+            height: 700px;
+            background: #0a0a1e;
+            border: 2px solid #00cccc;
+            box-shadow: 0 0 20px rgba(0, 200, 200, 0.3);
+        }
+        
+        #gameCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            cursor: crosshair;
+        }
+        
+        #loadingScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #0a0a1a;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            z-index: 1000;
+        }
+        
+        #loadingText {
+            font-size: 24px;
+            color: #00cccc;
+            margin-top: 20px;
+        }
+        
+        .spinner {
+            border: 4px solid #0a0a1a;
+            border-top: 4px solid #00cccc;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <div id="loadingScreen">
+            <div class="spinner"></div>
+            <div id="loadingText">Загрузка игры...</div>
+        </div>
+        <canvas id="gameCanvas" width="1200" height="700"></canvas>
+    </div>
+    
+    <script src="js/levels.js"></script>
+    <script src="js/classes.js"></script>
+    <script src="js/game.js"></script>
+</body>
+</html>
+
