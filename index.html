@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <title>Doodle Jump JS</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
   <style>
     html, body {
       margin: 0;
@@ -1256,6 +1257,10 @@
 
   Game.width = w;
   Game.height = h;
+
+  Game.canvas.style.width = w + "px";
+  Game.canvas.style.height = h + "px";
+
   Game.canvas.width = w * dpr;
   Game.canvas.height = h * dpr;
   Game.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -1275,4 +1280,5 @@
 </body>
 
 </html>
+
 
