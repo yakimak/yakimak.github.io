@@ -1,0 +1,1271 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <title>Doodle Jump JS</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background: #101424;
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      user-select: none;
+      touch-action: none;
+    }
+    canvas {
+      display: block;
+      background: radial-gradient(circle at 50% -20%, #5fd0ff 0%, #1b1e38 55%, #050618 100%);
+    }
+    #ui {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      color: #fff;
+      text-shadow: 0 0 5px #000;
+      font-size: 18px;
+      z-index: 5;
+      pointer-events: none;
+    }
+    #ui .score-label {
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    #ui .best-label {
+      font-size: 14px;
+      opacity: 0.8;
+    }
+    #gameOverOverlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      z-index: 10;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s;
+    }
+    #gameOverOverlay.visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    #gameOverOverlay h1 {
+      margin: 0 0 10px;
+      font-size: 48px;
+      letter-spacing: 2px;
+      text-shadow: 0 0 10px #000;
+    }
+    #gameOverOverlay p {
+      margin: 4px 0;
+      font-size: 18px;
+    }
+    #restartBtn {
+      margin-top: 16px;
+      padding: 10px 24px;
+      border-radius: 24px;
+      border: none;
+      font-size: 18px;
+      font-weight: 600;
+      cursor: pointer;
+      background: linear-gradient(135deg, #ffcf5f, #ff9b2f);
+      color: #2b1b09;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+      transition: transform 0.1s, box-shadow 0.1s;
+    }
+    #restartBtn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(0,0,0,0.45);
+    }
+    #restartBtn:active {
+      transform: translateY(1px) scale(0.98);
+      box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+    }
+
+    /* Мобильные кнопки */
+    #touchControls {
+      position: fixed;
+      bottom: 16px;
+      left: 0;
+      right: 0;
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+      z-index: 8;
+      pointer-events: none;
+    }
+    .touch-btn {
+      pointer-events: auto;
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.1);
+      border: 2px solid rgba(255,255,255,0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 32px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      touch-action: none;
+      user-select: none;
+    }
+    .touch-btn:active {
+      background: rgba(255,255,255,0.25);
+      transform: translateY(1px);
+    }
+
+    @media (min-width: 900px) {
+      #touchControls {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="game"></canvas>
+
+  <div id="ui">
+    <div class="score-label">Счёт: <span id="scoreValue">0</span></div>
+    <div class="best-label">Рекорд: <span id="bestValue">0</span></div>
+    <div class="best-label">Управление: ← → / A D, R — рестарт</div>
+  </div>
+
+  <div id="gameOverOverlay">
+    <h1>GAME OVER</h1>
+    <p>Ваш счёт: <span id="finalScore">0</span></p>
+    <p>Лучший: <span id="finalBest">0</span></p>
+    <button id="restartBtn">Играть снова</button>
+  </div>
+
+  <div id="touchControls">
+    <div class="touch-btn" id="btnLeft">◀</div>
+    <div class="touch-btn" id="btnRight">▶</div>
+  </div>
+
+  <script>
+    // Основное состояние игры
+    const Game = {
+      canvas: null,
+      ctx: null,
+      width: 0,
+      height: 0,
+      lastTime: 0,
+      running: false,
+      cameraY: 0,
+      maxHeight: 0,
+      score: 0,
+      bestScore: 0,
+      gravity: 1800,
+      input: {
+        left: false,
+        right: false,
+        accel: 2000,
+        maxSpeed: 1000,
+        currentVel: 0,
+        touchActive: false,
+        touchStartX: 0
+      },
+      player: null,
+      platforms: [],
+      objects: [],
+      enemies: [],
+      particles: [],
+      clouds: [],
+      shakeTime: 0,
+      shakeStrength: 0,
+      powerups: {
+        jetpackTime: 0,
+        shieldTime: 0
+      },
+      ui: {},
+      sounds: {
+        ctx: null,
+        enabled: true
+      }
+    };
+
+    // Типы платформ
+    const PLATFORM_TYPES = {
+      NORMAL: "normal",
+      BREAK: "break",
+      MOVING: "moving",
+      VANISH: "vanish"
+    };
+
+    // Инициализация
+    function init() {
+      Game.canvas = document.getElementById("game");
+      Game.ctx = Game.canvas.getContext("2d");
+      resizeCanvas();
+
+      Game.ui.score = document.getElementById("scoreValue");
+      Game.ui.best = document.getElementById("bestValue");
+      Game.ui.overlay = document.getElementById("gameOverOverlay");
+      Game.ui.finalScore = document.getElementById("finalScore");
+      Game.ui.finalBest = document.getElementById("finalBest");
+
+      // Рекорд из localStorage
+      try {
+        const best = localStorage.getItem("doodleBestScore");
+        if (best !== null) {
+          Game.bestScore = parseInt(best, 10) || 0;
+          Game.ui.best.textContent = Game.bestScore;
+        }
+      } catch (e) {
+        Game.bestScore = 0;
+      }
+
+      setupInput();
+      setupAudio();
+      resetGame();
+
+      Game.lastTime = performance.now();
+      Game.running = true;
+      requestAnimationFrame(loop);
+    }
+
+    function resetGame() {
+      const w = Game.width;
+      const h = Game.height;
+
+      Game.cameraY = 0;
+      Game.maxHeight = 0;
+      Game.score = 0;
+      Game.powerups.jetpackTime = 0;
+      Game.powerups.shieldTime = 0;
+      Game.shakeTime = 0;
+      Game.shakeStrength = 0;
+
+      Game.player = {
+        x: w / 2,
+        y: h - 100,
+        radius: 22,
+        vy: -900,
+        eyesBlink: 0,
+        eyesTimer: 0,
+        facing: 1
+      };
+
+      Game.platforms.length = 0;
+      Game.objects.length = 0;
+      Game.enemies.length = 0;
+      Game.particles.length = 0;
+      Game.clouds.length = 0;
+
+      // Базовые платформы
+      const stepY = 55;
+      let currentY = h - 20;
+      for (let i = 0; i < 14; i++) {
+        const type = i < 3 ? PLATFORM_TYPES.NORMAL : randomPlatformType();
+        Game.platforms.push({
+          x: w / 2 - 50 + (Math.random() * 120 - 60),
+          y: currentY,
+          width: 100,
+          height: 18,
+          type,
+          vx: type === PLATFORM_TYPES.MOVING ? (Math.random() < 0.5 ? -70 : 70) : 0,
+          broken: false,
+          vanishAlpha: 1,
+          touched: false
+        });
+        currentY -= stepY;
+      }
+
+      // Начальные облака фона
+      for (let i = 0; i < 20; i++) {
+        addCloud(Math.random() * w, Math.random() * h * -1);
+      }
+
+      Game.ui.score.textContent = "0";
+      Game.ui.overlay.classList.remove("visible");
+    }
+
+    // Тип платформы по вероятности
+    function randomPlatformType() {
+      const r = Math.random();
+      if (r < 0.55) return PLATFORM_TYPES.NORMAL;
+      if (r < 0.7) return PLATFORM_TYPES.MOVING;
+      if (r < 0.85) return PLATFORM_TYPES.BREAK;
+      return PLATFORM_TYPES.VANISH;
+    }
+
+    // Основной цикл
+    function loop(timestamp) {
+      if (!Game.running) return;
+      const dt = Math.min((timestamp - Game.lastTime) / 1000, 0.033);
+      Game.lastTime = timestamp;
+
+      update(dt);
+      render();
+
+      requestAnimationFrame(loop);
+    }
+
+    // Обновление
+    function update(dt) {
+      const g = Game;
+
+      // Обновление входа и горизонтальной скорости
+      updateHorizontalInput(dt);
+
+      // Обновление игрока
+      updatePlayer(dt);
+
+      // Камера следует вверх
+      const targetCam = Math.min(g.cameraY, g.player.y - g.height * 0.4);
+      g.cameraY += (targetCam - g.cameraY) * 0.15;
+
+      // Генерация платформ/объектов выше
+      generateWorld();
+
+      // Обновление платформ, объектов, врагов, частиц, облаков
+      updatePlatforms(dt);
+      updateObjects(dt);
+      updateEnemies(dt);
+      updateParticles(dt);
+      updateClouds(dt);
+
+      // Обновление бонусов
+      updatePowerups(dt);
+
+      // Счёт (по высоте)
+      const height = -(g.player.y - g.height);
+      if (height > g.maxHeight) {
+        g.maxHeight = height;
+        g.score = Math.floor(g.maxHeight / 4);
+        g.ui.score.textContent = g.score.toString();
+      }
+
+      // Экранотряс
+      if (g.shakeTime > 0) {
+        g.shakeTime -= dt;
+        if (g.shakeTime < 0) g.shakeTime = 0;
+      }
+
+      // Проверка game over (падение)
+      if (g.player.y - g.cameraY > g.height + 80) {
+        gameOver();
+      }
+
+      // Мигание глаз персонажа
+      g.player.eyesTimer -= dt;
+      if (g.player.eyesTimer <= 0) {
+        g.player.eyesTimer = 2 + Math.random() * 3;
+        g.player.eyesBlink = 0.15;
+      }
+      if (g.player.eyesBlink > 0) {
+        g.player.eyesBlink -= dt;
+        if (g.player.eyesBlink < 0) g.player.eyesBlink = 0;
+      }
+    }
+
+    function updateHorizontalInput(dt) {
+      const g = Game;
+      let dir = 0;
+      if (g.input.left) dir -= 1;
+      if (g.input.right) dir += 1;
+
+      g.player.facing = dir !== 0 ? dir : g.player.facing;
+
+      const targetSpeed = dir * g.input.maxSpeed;
+      const accel = g.input.accel;
+      if (g.input.touchActive && dir === 0) {
+        // при таче направление уже в currentVel
+      }
+
+      // Плавное изменение currentVel
+      const diff = targetSpeed - g.input.currentVel;
+      const maxChange = accel * dt;
+      if (Math.abs(diff) <= maxChange) {
+        g.input.currentVel = targetSpeed;
+      } else {
+        g.input.currentVel += Math.sign(diff) * maxChange;
+      }
+
+      g.player.x += g.input.currentVel * dt;
+
+      // Оборачивание по краям
+      if (g.player.x < -30) g.player.x = g.width + 30;
+      if (g.player.x > g.width + 30) g.player.x = -30;
+    }
+
+    function updatePlayer(dt) {
+      const g = Game;
+      const p = g.player;
+
+      // Гравитация или реактивный ранец
+      if (g.powerups.jetpackTime > 0) {
+        p.vy = -900;
+      } else {
+        p.vy += g.gravity * dt;
+      }
+
+      p.y += p.vy * dt;
+
+      // Коллизия с платформами только при падении
+      if (p.vy > 0) {
+        for (let i = 0; i < g.platforms.length; i++) {
+          const plat = g.platforms[i];
+          if (checkPlayerPlatformCollision(p, plat)) {
+            handlePlatformHit(plat);
+            break;
+          }
+        }
+      }
+
+      // Коллизия с объектами (монетки, пружины, бонусы)
+      for (let i = g.objects.length - 1; i >= 0; i--) {
+        const obj = g.objects[i];
+        if (circleRectOverlap(p.x, p.y, p.radius * 0.8, obj.x, obj.y, obj.width, obj.height)) {
+          handleObjectPickup(obj);
+          g.objects.splice(i, 1);
+        }
+      }
+
+      // Коллизия с врагами
+      for (let i = g.enemies.length - 1; i >= 0; i--) {
+        const e = g.enemies[i];
+        const hit = circleCircleOverlap(p.x, p.y, p.radius * 0.8, e.x, e.y, e.radius);
+        if (!hit) continue;
+
+        // Прыжок сверху на врага
+        if (p.vy > 0 && p.y < e.y - e.radius * 0.4) {
+          p.vy = -1100;
+          spawnParticles(e.x, e.y, 24, "#ff4f6f");
+          playSound("enemy");
+          g.enemies.splice(i, 1);
+        } else {
+          // Щит защищает
+          if (g.powerups.shieldTime > 0) {
+            spawnParticles(e.x, e.y, 16, "#88e5ff");
+            g.enemies.splice(i, 1);
+            playSound("shield");
+          } else {
+            gameOver();
+          }
+        }
+      }
+    }
+
+    function checkPlayerPlatformCollision(player, plat) {
+      if (plat.broken) return false;
+
+      const px = player.x;
+      const pyPrev = player.y - player.vy * (1 / 60); // приблизительно предыдущее положение
+      const pyNow = player.y;
+      const pr = player.radius;
+
+      const pl = plat.x;
+      const pright = plat.x + plat.width;
+      const pyTop = plat.y;
+
+      const wasAbove = pyPrev + pr <= pyTop;
+      const nowBelowTop = pyNow + pr >= pyTop;
+      const horizontallyInside = px + pr * 0.5 >= pl && px - pr * 0.5 <= pright;
+
+      return wasAbove && nowBelowTop && horizontallyInside;
+    }
+
+    function handlePlatformHit(plat) {
+      const g = Game;
+      const p = g.player;
+
+      if (plat.type === PLATFORM_TYPES.BREAK) {
+        plat.broken = true;
+        // Маленькая задержка, затем исчезновение
+        setTimeout(() => {
+          const idx = g.platforms.indexOf(plat);
+          if (idx !== -1) g.platforms.splice(idx, 1);
+        }, 300);
+        spawnParticles(p.x, plat.y, 16, "#a0673b");
+        p.vy = -800;
+        playSound("jump");
+      } else if (plat.type === PLATFORM_TYPES.VANISH) {
+        if (!plat.touched) {
+          plat.touched = true;
+          p.vy = -950;
+          playSound("jump");
+          plat.vanishAlpha = 0.9;
+          spawnParticles(p.x, plat.y, 18, "#e5f0ff");
+          // мгновенное исчезновение
+          const idx = g.platforms.indexOf(plat);
+          if (idx !== -1) g.platforms.splice(idx, 1);
+        }
+      } else {
+        // Обычная / движущаяся
+        p.vy = -900;
+        playSound("jump");
+      }
+
+      // Небольшая тряска при сильном прыжке
+      g.shakeTime = 0.1;
+      g.shakeStrength = 6;
+    }
+
+    // Генерация мира вверх
+    function generateWorld() {
+      const g = Game;
+      const w = g.width;
+
+      let highestY = Infinity;
+      for (let i = 0; i < g.platforms.length; i++) {
+        if (g.platforms[i].y < highestY) highestY = g.platforms[i].y;
+      }
+
+      // Генерировать пока есть "дырка" выше камеры
+      const topLimit = g.cameraY - 600;
+      while (highestY > topLimit) {
+        const y = highestY - (35 + Math.random() * 45);
+
+        const type = randomPlatformType();
+        const plat = {
+          x: 40 + Math.random() * (w - 80),
+          y: y,
+          width: 100,
+          height: 18,
+          type,
+          vx: type === PLATFORM_TYPES.MOVING ? (Math.random() < 0.5 ? -80 : 80) : 0,
+          broken: false,
+          vanishAlpha: 1,
+          touched: false
+        };
+        g.platforms.push(plat);
+        highestY = y;
+
+        // Вероятности появления объектов
+        if (Math.random() < 0.23 && type === PLATFORM_TYPES.NORMAL) {
+          const choice = Math.random();
+          if (choice < 0.4) {
+            addObjectOnPlatform(plat, "coin");
+          } else if (choice < 0.65) {
+            addObjectOnPlatform(plat, "spring");
+          } else if (choice < 0.78) {
+            addObjectOnPlatform(plat, "jetpack");
+          } else if (choice < 0.9) {
+            addObjectOnPlatform(plat, "shield");
+          }
+        }
+
+        if (Math.random() < 0.18) {
+          addEnemyNearPlatform(plat);
+        }
+
+        if (Math.random() < 0.35) {
+          addCloud(Math.random() * w, y - 40 - Math.random() * 120);
+        }
+      }
+
+      // Удалить нижние объекты
+      const bottomLimit = g.cameraY + g.height + 200;
+      g.platforms = g.platforms.filter(p => p.y < bottomLimit);
+      g.objects = g.objects.filter(o => o.y < bottomLimit);
+      g.enemies = g.enemies.filter(e => e.y < bottomLimit);
+      g.clouds = g.clouds.filter(c => c.y < bottomLimit + 200);
+    }
+
+    function addObjectOnPlatform(plat, type) {
+      const width = type === "spring" ? 22 : type === "coin" ? 20 : 28;
+      const height = type === "spring" ? 24 : type === "coin" ? 20 : 28;
+      const x = plat.x + plat.width / 2 - width / 2;
+      const y = plat.y - height - 4;
+      Game.objects.push({
+        type,
+        x,
+        y,
+        width,
+        height,
+        vy: 0,
+        phase: Math.random() * Math.PI * 2
+      });
+    }
+
+    function addEnemyNearPlatform(plat) {
+      const offsetY = -40 - Math.random() * 60;
+      const x = plat.x + plat.width / 2 + (Math.random() * 2 - 1) * 60;
+      Game.enemies.push({
+        x,
+        y: plat.y + offsetY,
+        radius: 18,
+        vx: (Math.random() * 2 - 1) * 45,
+        vy: 0,
+        float: Math.random() < 0.5,
+        baseY: plat.y + offsetY,
+        phase: Math.random() * Math.PI * 2
+      });
+    }
+
+    function addCloud(x, y) {
+      Game.clouds.push({
+        x,
+        y,
+        width: 80 + Math.random() * 80,
+        height: 40 + Math.random() * 20,
+        speed: 10 + Math.random() * 15,
+        alpha: 0.08 + Math.random() * 0.08
+      });
+    }
+
+    function updatePlatforms(dt) {
+      const g = Game;
+      const w = g.width;
+      for (let i = 0; i < g.platforms.length; i++) {
+        const p = g.platforms[i];
+        if (p.type === PLATFORM_TYPES.MOVING) {
+          p.x += p.vx * dt;
+          if (p.x < 20) {
+            p.x = 20;
+            p.vx *= -1;
+          }
+          if (p.x + p.width > w - 20) {
+            p.x = w - 20 - p.width;
+            p.vx *= -1;
+          }
+        }
+      }
+    }
+
+    function updateObjects(dt) {
+      for (let i = 0; i < Game.objects.length; i++) {
+        const o = Game.objects[i];
+        o.phase += dt * 3;
+        o.y += Math.sin(o.phase) * 10 * dt;
+      }
+    }
+
+    function updateEnemies(dt) {
+      const g = Game;
+      for (let i = 0; i < g.enemies.length; i++) {
+        const e = g.enemies[i];
+        if (e.float) {
+          e.phase += dt * 2;
+          e.y = e.baseY + Math.sin(e.phase) * 12;
+        }
+        e.x += e.vx * dt;
+        if (e.x < 20 || e.x > g.width - 20) {
+          e.vx *= -1;
+        }
+      }
+    }
+
+    function updateParticles(dt) {
+      const parts = Game.particles;
+      for (let i = parts.length - 1; i >= 0; i--) {
+        const p = parts[i];
+        p.life -= dt;
+        if (p.life <= 0) {
+          parts.splice(i, 1);
+          continue;
+        }
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+        p.vy += 600 * dt;
+      }
+    }
+
+    function updateClouds(dt) {
+      const clouds = Game.clouds;
+      for (let i = 0; i < clouds.length; i++) {
+        const c = clouds[i];
+        c.x += c.speed * dt * 0.2;
+        if (c.x - c.width > Game.width + 40) {
+          c.x = -c.width;
+        }
+      }
+    }
+
+    function updatePowerups(dt) {
+      if (Game.powerups.jetpackTime > 0) {
+        Game.powerups.jetpackTime -= dt;
+        if (Game.powerups.jetpackTime < 0) Game.powerups.jetpackTime = 0;
+      }
+      if (Game.powerups.shieldTime > 0) {
+        Game.powerups.shieldTime -= dt;
+        if (Game.powerups.shieldTime < 0) Game.powerups.shieldTime = 0;
+      }
+    }
+
+    function handleObjectPickup(obj) {
+      const g = Game;
+      if (obj.type === "coin") {
+        g.score += 50;
+        g.ui.score.textContent = g.score.toString();
+        spawnParticles(obj.x + obj.width / 2, obj.y + obj.height / 2, 20, "#ffd75f");
+        playSound("coin");
+      } else if (obj.type === "spring") {
+        g.player.vy = -1300;
+        spawnParticles(obj.x + obj.width / 2, obj.y, 18, "#fff475");
+        screenShake(0.18, 9);
+        playSound("spring");
+      } else if (obj.type === "jetpack") {
+        g.powerups.jetpackTime = 2.4;
+        spawnParticles(obj.x + obj.width / 2, obj.y, 26, "#ff7f7f");
+        screenShake(0.3, 10);
+        playSound("jetpack");
+      } else if (obj.type === "shield") {
+        g.powerups.shieldTime = 4.0;
+        spawnParticles(obj.x + obj.width / 2, obj.y, 24, "#8dd8ff");
+        playSound("shield");
+      }
+    }
+
+    function spawnParticles(x, y, count, color) {
+      const parts = Game.particles;
+      for (let i = 0; i < count; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 80 + Math.random() * 260;
+        parts.push({
+          x,
+          y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          life: 0.5 + Math.random() * 0.4,
+          color,
+          size: 2 + Math.random() * 3
+        });
+      }
+    }
+
+    function screenShake(time, strength) {
+      Game.shakeTime = Math.max(Game.shakeTime, time);
+      Game.shakeStrength = Math.max(Game.shakeStrength, strength);
+    }
+
+    function gameOver() {
+      if (!Game.running) return;
+      Game.running = false;
+
+      // Обновить рекорд
+      if (Game.score > Game.bestScore) {
+        Game.bestScore = Game.score;
+        try {
+          localStorage.setItem("doodleBestScore", Game.bestScore.toString());
+        } catch (e) {}
+      }
+
+      Game.ui.finalScore.textContent = Game.score.toString();
+      Game.ui.finalBest.textContent = Game.bestScore.toString();
+      Game.ui.best.textContent = Game.bestScore.toString();
+      Game.ui.overlay.classList.add("visible");
+    }
+
+    function restart() {
+      Game.running = true;
+      resetGame();
+      Game.lastTime = performance.now();
+      requestAnimationFrame(loop);
+    }
+
+    // Рендер
+    function render() {
+      const g = Game;
+      const ctx = g.ctx;
+      const w = g.width;
+      const h = g.height;
+
+      ctx.save();
+
+      // Тряска
+      if (g.shakeTime > 0) {
+        const s = g.shakeStrength * (g.shakeTime);
+        const dx = (Math.random() * 2 - 1) * s;
+        const dy = (Math.random() * 2 - 1) * s;
+        ctx.translate(dx, dy);
+      }
+
+      // Фон градиент + звезды
+      ctx.clearRect(0, 0, w, h);
+      drawBackground(ctx, w, h);
+
+      ctx.translate(0, -g.cameraY);
+
+      // Облака
+      drawClouds(ctx);
+
+      // Платформы
+      for (let i = 0; i < g.platforms.length; i++) {
+        drawPlatform(ctx, g.platforms[i]);
+      }
+
+      // Объекты
+      for (let i = 0; i < g.objects.length; i++) {
+        drawObject(ctx, g.objects[i]);
+      }
+
+      // Враги
+      for (let i = 0; i < g.enemies.length; i++) {
+        drawEnemy(ctx, g.enemies[i]);
+      }
+
+      // Частицы
+      drawParticles(ctx);
+
+      // Игрок
+      drawPlayer(ctx, g.player);
+
+      // Реактивный след
+      if (g.powerups.jetpackTime > 0) {
+        const p = g.player;
+        for (let i = 0; i < 3; i++) {
+          const off = (i - 1) * 6;
+          ctx.beginPath();
+          const grad = ctx.createLinearGradient(
+            p.x + off, p.y + 10,
+            p.x + off, p.y + 40
+          );
+          grad.addColorStop(0, "rgba(255,255,255,0.9)");
+          grad.addColorStop(1, "rgba(255,120,80,0)");
+          ctx.fillStyle = grad;
+          ctx.moveTo(p.x + off, p.y + 10);
+          ctx.lineTo(p.x + off - 6, p.y + 40);
+          ctx.lineTo(p.x + off + 6, p.y + 40);
+          ctx.closePath();
+          ctx.fill();
+        }
+      }
+
+      // Щит вокруг игрока
+      if (g.powerups.shieldTime > 0) {
+        const p = g.player;
+        const alpha = 0.3 + 0.2 * Math.sin(performance.now() / 150);
+        ctx.beginPath();
+        ctx.strokeStyle = "rgba(150, 230, 255," + alpha + ")";
+        ctx.lineWidth = 4;
+        ctx.arc(p.x, p.y, p.radius + 10, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+
+      ctx.restore();
+    }
+
+    function drawBackground(ctx, w, h) {
+      const starCount = 80;
+      ctx.save();
+      ctx.globalAlpha = 0.7;
+      ctx.fillStyle = "rgba(255,255,255,0.5)";
+      for (let i = 0; i < starCount; i++) {
+        const x = (i * 137.5 + Math.sin(performance.now() / 2000 + i) * 50) % w;
+        const y = ((i * 91.3) % h);
+        const r = (i % 3) * 0.5 + 0.6;
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+    }
+
+    function drawClouds(ctx) {
+      const clouds = Game.clouds;
+      for (let i = 0; i < clouds.length; i++) {
+        const c = clouds[i];
+        ctx.save();
+        ctx.globalAlpha = c.alpha;
+        ctx.fillStyle = "#ffffff";
+        const x = c.x;
+        const y = c.y;
+        ctx.beginPath();
+        ctx.ellipse(x, y, c.width * 0.4, c.height * 0.55, 0, 0, Math.PI * 2);
+        ctx.ellipse(x - c.width * 0.25, y + 5, c.width * 0.27, c.height * 0.4, 0, 0, Math.PI * 2);
+        ctx.ellipse(x + c.width * 0.25, y + 3, c.width * 0.3, c.height * 0.45, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+
+    function drawPlatform(ctx, plat) {
+      const y = plat.y;
+      const grad = ctx.createLinearGradient(plat.x, y, plat.x, y + plat.height);
+      if (plat.type === PLATFORM_TYPES.NORMAL) {
+        grad.addColorStop(0, "#6fe37b");
+        grad.addColorStop(1, "#3bac4b");
+      } else if (plat.type === PLATFORM_TYPES.BREAK) {
+        grad.addColorStop(0, "#c98855");
+        grad.addColorStop(1, "#7a4c2b");
+      } else if (plat.type === PLATFORM_TYPES.MOVING) {
+        grad.addColorStop(0, "#6bbaf5");
+        grad.addColorStop(1, "#3c7bd0");
+      } else {
+        const alpha = plat.touched ? plat.vanishAlpha : 0.45 + 0.2 * Math.sin(performance.now() / 200);
+        ctx.globalAlpha = alpha;
+        grad.addColorStop(0, "#e6f7ff");
+        grad.addColorStop(1, "#b0c5ff");
+      }
+
+      ctx.save();
+      ctx.fillStyle = grad;
+      ctx.strokeStyle = "rgba(0,0,0,0.2)";
+      ctx.lineWidth = 2;
+      const radius = 6;
+
+      roundRectPath(ctx, plat.x, y, plat.width, plat.height, radius);
+      ctx.fill();
+      ctx.stroke();
+
+      // Деревянные "доски" текстура
+      ctx.globalAlpha *= 0.35;
+      ctx.strokeStyle = "rgba(255,255,255,0.5)";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      const segments = 4;
+      for (let i = 1; i < segments; i++) {
+        const xx = plat.x + (plat.width / segments) * i;
+        ctx.moveTo(xx, y + 3);
+        ctx.lineTo(xx, y + plat.height - 3);
+      }
+      ctx.stroke();
+
+      ctx.restore();
+      ctx.globalAlpha = 1;
+    }
+
+    function drawObject(ctx, obj) {
+      const cx = obj.x + obj.width / 2;
+      const cy = obj.y + obj.height / 2;
+      if (obj.type === "coin") {
+        const grad = ctx.createRadialGradient(
+          cx - 3, cy - 3, 2,
+          cx, cy, obj.width
+        );
+        grad.addColorStop(0, "#fff9c2");
+        grad.addColorStop(0.5, "#ffd75f");
+        grad.addColorStop(1, "#d49a22");
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, obj.width / 2, obj.height / 2, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = "rgba(255,255,255,0.8)";
+        ctx.beginPath();
+        ctx.ellipse(cx - 3, cy - 3, obj.width / 4, obj.height / 4, 0, 0, Math.PI * 2);
+        ctx.fill();
+      } else if (obj.type === "spring") {
+        ctx.save();
+        ctx.translate(obj.x, obj.y);
+        ctx.fillStyle = "#f2e56b";
+        ctx.fillRect(2, obj.height - 6, obj.width - 4, 6);
+        ctx.strokeStyle = "#c2b66b";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        const coils = 5;
+        const height = obj.height - 8;
+        for (let i = 0; i < coils; i++) {
+          const x1 = 4 + (i / coils) * (obj.width - 8);
+          const y1 = obj.height - 8 - (i / coils) * height;
+          const x2 = 4 + ((i + 1) / coils) * (obj.width - 8);
+          const y2 = obj.height - 8 - ((i + 1) / coils) * height;
+          ctx.moveTo(x1, y1);
+          ctx.lineTo(x2, y2);
+        }
+        ctx.stroke();
+        ctx.restore();
+      } else if (obj.type === "jetpack") {
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.fillStyle = "#ff6b6b";
+        roundRectPath(ctx, -obj.width / 2, -obj.height / 2, obj.width, obj.height, 6);
+        ctx.fill();
+        ctx.fillStyle = "#ffffff";
+        roundRectPath(ctx, -obj.width / 3, -obj.height / 4, obj.width / 1.5, obj.height / 2.2, 4);
+        ctx.fill();
+        ctx.restore();
+      } else if (obj.type === "shield") {
+        ctx.save();
+        const r = obj.width / 2;
+        const grd = ctx.createRadialGradient(
+          cx, cy, r * 0.2,
+          cx, cy, r
+        );
+        grd.addColorStop(0, "rgba(255,255,255,0.9)");
+        grd.addColorStop(1, "rgba(180,220,255,0.4)");
+        ctx.fillStyle = grd;
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = "rgba(120,180,255,0.8)";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+
+    function drawEnemy(ctx, e) {
+      ctx.save();
+      ctx.fillStyle = "#111111";
+      ctx.beginPath();
+      ctx.arc(e.x, e.y, e.radius, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Глаза
+      ctx.fillStyle = "#ffffff";
+      const eyeOffsetX = e.radius * 0.4;
+      const eyeOffsetY = -e.radius * 0.2;
+      ctx.beginPath();
+      ctx.arc(e.x - eyeOffsetX, e.y + eyeOffsetY, e.radius * 0.25, 0, Math.PI * 2);
+      ctx.arc(e.x + eyeOffsetX, e.y + eyeOffsetY, e.radius * 0.25, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = "#000000";
+      const pupilOffset = 3;
+      ctx.beginPath();
+      ctx.arc(e.x - eyeOffsetX + pupilOffset, e.y + eyeOffsetY + pupilOffset, e.radius * 0.1, 0, Math.PI * 2);
+      ctx.arc(e.x + eyeOffsetX + pupilOffset, e.y + eyeOffsetY + pupilOffset, e.radius * 0.1, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Злая улыбка
+      ctx.strokeStyle = "#ff4f6f";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(e.x, e.y + e.radius * 0.1, e.radius * 0.6, 0.15 * Math.PI, 0.85 * Math.PI);
+      ctx.stroke();
+
+      ctx.restore();
+    }
+
+    function drawParticles(ctx) {
+      const parts = Game.particles;
+      for (let i = 0; i < parts.length; i++) {
+        const p = parts[i];
+        const alpha = Math.max(p.life, 0) / 0.7;
+        ctx.fillStyle = hexToRgba(p.color, alpha);
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    function drawPlayer(ctx, p) {
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      // Тело
+      const grad = ctx.createRadialGradient(
+        -10, -10, 5,
+        0, 0, p.radius
+      );
+      grad.addColorStop(0, "#fff6c7");
+      grad.addColorStop(0.5, "#ffcf5f");
+      grad.addColorStop(1, "#f39a3b");
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(0, 0, p.radius, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Рот
+      ctx.strokeStyle = "#c36a2b";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(0, 6, p.radius * 0.5, 0.15 * Math.PI, 0.85 * Math.PI);
+      ctx.stroke();
+
+      // Глаза
+      const blink = p.eyesBlink > 0;
+      const eyeH = blink ? 2 : 7;
+      const eyeOffsetX = 8;
+      ctx.fillStyle = "#ffffff";
+      roundRectPath(ctx, -eyeOffsetX - 5, -p.radius * 0.3, 10, eyeH, 2);
+      roundRectPath(ctx, eyeOffsetX - 5, -p.radius * 0.3, 10, eyeH, 2);
+      ctx.fill();
+
+      if (!blink) {
+        ctx.fillStyle = "#000000";
+        const dir = p.facing;
+        const pupilOffset = dir * 2;
+        ctx.beginPath();
+        ctx.arc(-eyeOffsetX + pupilOffset, -p.radius * 0.3 + 2, 2.3, 0, Math.PI * 2);
+        ctx.arc(eyeOffsetX + pupilOffset, -p.radius * 0.3 + 2, 2.3, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      ctx.restore();
+    }
+
+    // Вспомогательные функции рисования
+    function roundRectPath(ctx, x, y, width, height, radius) {
+      ctx.beginPath();
+      ctx.moveTo(x + radius, y);
+      ctx.lineTo(x + width - radius, y);
+      ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+      ctx.lineTo(x + width, y + height - radius);
+      ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+      ctx.lineTo(x + radius, y + height);
+      ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+      ctx.lineTo(x, y + radius);
+      ctx.quadraticCurveTo(x, y, x + radius, y);
+      ctx.closePath();
+    }
+
+    function circleRectOverlap(cx, cy, cr, rx, ry, rw, rh) {
+      const closestX = clamp(cx, rx, rx + rw);
+      const closestY = clamp(cy, ry, ry + rh);
+      const dx = cx - closestX;
+      const dy = cy - closestY;
+      return dx * dx + dy * dy < cr * cr;
+    }
+
+    function circleCircleOverlap(x1, y1, r1, x2, y2, r2) {
+      const dx = x1 - x2;
+      const dy = y1 - y2;
+      const rr = r1 + r2;
+      return dx * dx + dy * dy < rr * rr;
+    }
+
+    function clamp(v, min, max) {
+      return v < min ? min : v > max ? max : v;
+    }
+
+    function hexToRgba(hex, alpha) {
+      const c = hex.replace("#", "");
+      const bigint = parseInt(c, 16);
+      const r = (bigint >> 16) & 255;
+      const g = (bigint >> 8) & 255;
+      const b = bigint & 255;
+      return "rgba(" + r + "," + g + "," + b + "," + alpha + ")";
+    }
+
+    // Управление
+    function setupInput() {
+      window.addEventListener("keydown", e => {
+        if (e.code === "ArrowLeft" || e.code === "KeyA") Game.input.left = true;
+        if (e.code === "ArrowRight" || e.code === "KeyD") Game.input.right = true;
+        if (e.code === "KeyR") {
+          if (!Game.running) restart();
+        }
+      });
+      window.addEventListener("keyup", e => {
+        if (e.code === "ArrowLeft" || e.code === "KeyA") Game.input.left = false;
+        if (e.code === "ArrowRight" || e.code === "KeyD") Game.input.right = false;
+      });
+
+      // Сенсорное управление (свайпы + кнопки)
+      const canvas = Game.canvas;
+      canvas.addEventListener("touchstart", handleTouchStart, { passive: false });
+      canvas.addEventListener("touchmove", handleTouchMove, { passive: false });
+      canvas.addEventListener("touchend", handleTouchEnd, { passive: false });
+
+      const btnLeft = document.getElementById("btnLeft");
+      const btnRight = document.getElementById("btnRight");
+
+      btnLeft.addEventListener("touchstart", e => {
+        e.preventDefault();
+        Game.input.left = true;
+      }, { passive: false });
+      btnLeft.addEventListener("touchend", e => {
+        e.preventDefault();
+        Game.input.left = false;
+      }, { passive: false });
+
+      btnRight.addEventListener("touchstart", e => {
+        e.preventDefault();
+        Game.input.right = true;
+      }, { passive: false });
+      btnRight.addEventListener("touchend", e => {
+        e.preventDefault();
+        Game.input.right = false;
+      }, { passive: false });
+    }
+
+    function handleTouchStart(e) {
+      if (e.touches.length > 0) {
+        Game.input.touchActive = true;
+        Game.input.touchStartX = e.touches[0].clientX;
+      }
+    }
+
+    function handleTouchMove(e) {
+      if (!Game.input.touchActive || e.touches.length === 0) return;
+      const dx = e.touches[0].clientX - Game.input.touchStartX;
+      const threshold = 10;
+      Game.input.left = dx < -threshold;
+      Game.input.right = dx > threshold;
+      e.preventDefault();
+    }
+
+    function handleTouchEnd() {
+      Game.input.touchActive = false;
+      Game.input.left = false;
+      Game.input.right = false;
+    }
+
+    // Аудио (Web Audio API, без внешних файлов)
+    function setupAudio() {
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) {
+          Game.sounds.enabled = false;
+          return;
+        }
+        Game.sounds.ctx = new AudioCtx();
+      } catch (e) {
+        Game.sounds.enabled = false;
+      }
+    }
+
+    function playSound(type) {
+      if (!Game.sounds.enabled || !Game.sounds.ctx) return;
+      const ctx = Game.sounds.ctx;
+      const now = ctx.currentTime;
+
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      let freq = 440;
+      let duration = 0.15;
+
+      if (type === "jump") {
+        freq = 620;
+        duration = 0.1;
+      } else if (type === "spring") {
+        freq = 760;
+        duration = 0.15;
+      } else if (type === "coin") {
+        freq = 900;
+        duration = 0.12;
+      } else if (type === "jetpack") {
+        freq = 400;
+        duration = 0.3;
+      } else if (type === "shield") {
+        freq = 520;
+        duration = 0.18;
+      } else if (type === "enemy") {
+        freq = 220;
+        duration = 0.22;
+      }
+
+      osc.frequency.setValueAtTime(freq, now);
+      osc.type = "triangle";
+      gain.gain.setValueAtTime(0.001, now);
+      gain.gain.exponentialRampToValueAtTime(0.25, now + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+      osc.start(now);
+      osc.stop(now + duration + 0.02);
+    }
+
+    // Размер канваса
+    function resizeCanvas() {
+      const dpr = window.devicePixelRatio || 1;
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      Game.width = w;
+      Game.height = h;
+      Game.canvas.width = w * dpr;
+      Game.canvas.height = h * dpr;
+      Game.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+
+    window.addEventListener("resize", resizeCanvas);
+
+    document.getElementById("restartBtn").addEventListener("click", () => {
+      if (!Game.running) restart();
+    });
+
+    // Запуск
+    window.addEventListener("load", init);
+  </script>
+</body>
+</html>
