@@ -1248,17 +1248,23 @@
 
     // Размер канваса
     function resizeCanvas() {
-      const dpr = window.devicePixelRatio || 1;
-      const w = window.innerWidth;
-      const h = window.innerHeight;
-      Game.width = w;
-      Game.height = h;
-      Game.canvas.width = w * dpr;
-      Game.canvas.height = h * dpr;
-      Game.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    }
+  const dpr = window.devicePixelRatio || 1;
+
+  const vv = window.visualViewport;
+  const w = vv ? vv.width : window.innerWidth;
+  const h = vv ? vv.height : window.innerHeight;
+
+  Game.width = w;
+  Game.height = h;
+  Game.canvas.width = w * dpr;
+  Game.canvas.height = h * dpr;
+  Game.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
 
     window.addEventListener("resize", resizeCanvas);
+    if (window.visualViewport) {
+  window.visualViewport.addEventListener("resize", resizeCanvas);
+}
 
     document.getElementById("restartBtn").addEventListener("click", () => {
       if (!Game.running) restart();
@@ -1268,4 +1274,5 @@
     window.addEventListener("load", init);
   </script>
 </body>
+
 </html>
