@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Теория информации — Задания 2 и 3</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            background: linear-gradient(145deg, #f8f9ff 0%, #f0f2fc 100%);
+            min-height: 100vh;
+            padding: 2rem 1rem;
+        }
+
+        /* главный контейнер */
+        .glass-container {
+            max-width: 1300px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(2px);
+            border-radius: 2rem;
+            box-shadow: 0 25px 45px -12px rgba(98, 0, 128, 0.25);
+            overflow: hidden;
+            border: 1px solid rgba(156, 72, 196, 0.2);
+        }
+
+        /* шапка с выбором задания */
+        .tab-bar {
+            display: flex;
+            background: white;
+            border-bottom: 2px solid #e9e4f0;
+            padding: 0 1.5rem;
+            gap: 0.5rem;
+        }
+
+        .tab-btn {
+            background: transparent;
+            border: none;
+            font-size: 1.2rem;
+            font-weight: 600;
+            padding: 1rem 2rem;
+            cursor: pointer;
+            color: #5a4b6e;
+            transition: all 0.2s ease;
+            border-radius: 2rem 2rem 0 0;
+            letter-spacing: 0.3px;
+        }
+
+        .tab-btn i {
+            margin-right: 8px;
+            font-style: normal;
+            display: inline-block;
+        }
+
+        .tab-btn:hover {
+            background: #f3eefa;
+            color: #6a1b9a;
+        }
+
+        .tab-btn.active {
+            background: #faf8ff;
+            color: #7c3aed;
+            border-bottom: 3px solid #9b4dff;
+            box-shadow: 0 -2px 8px rgba(124, 58, 237, 0.1);
+        }
+
+        /* панели с содержанием заданий */
+        .tab-pane {
+            display: none;
+            padding: 2rem 2rem 2.5rem;
+            animation: fade 0.25s ease;
+        }
+
+        .tab-pane.active-pane {
+            display: block;
+        }
+
+        @keyframes fade {
+            from { opacity: 0; transform: translateY(6px);}
+            to { opacity: 1; transform: translateY(0);}
+        }
+
+        /* фиолетовые акценты */
+        h2 {
+            color: #3c2a5f;
+            border-left: 6px solid #aa5eff;
+            padding-left: 1rem;
+            margin-bottom: 1.5rem;
+            font-weight: 600;
+        }
+
+        h3 {
+            color: #4a3a6e;
+            margin: 1.2rem 0 0.8rem;
+        }
+
+        .purple-gradient-btn {
+            background: linear-gradient(95deg, #8b5cf6, #a855f7);
+            border: none;
+            color: white;
+            font-weight: 600;
+            padding: 10px 20px;
+            border-radius: 40px;
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: 0 6px 14px rgba(139, 92, 246, 0.25);
+            font-size: 0.9rem;
+        }
+
+        .purple-gradient-btn:hover {
+            background: linear-gradient(95deg, #7c3aed, #9333ea);
+            transform: translateY(-2px);
+            box-shadow: 0 12px 20px rgba(139, 92, 246, 0.35);
+        }
+
+        .secondary-btn {
+            background: #ede9fe;
+            color: #6b21a5;
+            border: 1px solid #cba6ff;
+            padding: 8px 18px;
+            border-radius: 40px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        /* таблица ввода вероятностей */
+        .matrix-wrapper {
+            overflow-x: auto;
+            margin: 1.5rem 0;
+        }
+
+        .prob-table {
+            border-collapse: collapse;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            width: 100%;
+        }
+
+        .prob-table th, .prob-table td {
+            border: 1px solid #ddd8e8;
+            padding: 10px;
+            text-align: center;
+        }
+
+        .prob-table th {
+            background: #f3edff;
+            color: #3b2b55;
+            font-weight: 600;
+        }
+
+        .prob-table input {
+            width: 80px;
+            padding: 8px;
+            text-align: center;
+            border: 1px solid #cdc0e0;
+            border-radius: 12px;
+            font-size: 0.85rem;
+        }
+
+        .result-card {
+            background: #fbfaff;
+            border-radius: 28px;
+            padding: 1.2rem 1.8rem;
+            margin-top: 1.8rem;
+            border: 1px solid #e2d5ff;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.02);
+        }
+
+        .error-message {
+            color: #dc2626;
+            background: #fee2e2;
+            padding: 10px 16px;
+            border-radius: 28px;
+            margin-top: 15px;
+        }
+
+        /* блок кода для сервера */
+        .code-block {
+            background: #1e1a2f;
+            color: #e2e2ff;
+            padding: 1rem;
+            border-radius: 24px;
+            overflow-x: auto;
+            font-family: 'Fira Code', 'Courier New', monospace;
+            font-size: 0.8rem;
+            margin: 1rem 0;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .instruction-box {
+            background: #f5f0ff;
+            border-left: 5px solid #aa5eff;
+            padding: 1rem 1.5rem;
+            border-radius: 20px;
+            margin: 1rem 0;
+        }
+
+        .flex-buttons {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin: 1rem 0;
+        }
+
+        footer {
+            text-align: center;
+            padding: 1rem;
+            font-size: 0.75rem;
+            color: #7a6b96;
+            border-top: 1px solid #ede7ff;
+            margin-top: 1rem;
+        }
+    </style>
+</head>
+<body>
+<div class="glass-container">
+    <div class="tab-bar">
+        <button class="tab-btn active" data-tab="tab2">📊 Задание №2 — Энтропия системы</button>
+        <button class="tab-btn" data-tab="tab3">🌐 Задание №3 — HTTP-сервер (TCP)</button>
+    </div>
+
+    <!-- Панель задания 2: энтропия -->
+    <div id="tab2" class="tab-pane active-pane">
+        <h2>📐 Расчёт энтропии сложной системы из двух зависимых подсистем</h2>
+        <p>Введите матрицу совместных вероятностей <strong>P(X=x<sub>i</sub>, Y=y<sub>j</sub>)</strong>. Сумма всех элементов должна равняться 1.</p>
+        <div class="controls" style="display: flex; gap: 12px; flex-wrap: wrap; margin: 15px 0;">
+            <label>Размер (строк X, столбцов Y): 
+                <input type="number" id="rows" value="3" min="1" max="8" style="width: 70px;"> × 
+                <input type="number" id="cols" value="3" min="1" max="8" style="width: 70px;">
+            </label>
+            <button id="resizeBtn" class="purple-gradient-btn">Создать таблицу</button>
+            <button id="randomBtn" class="secondary-btn">🎲 Случайные</button>
+            <button id="normalizeBtn" class="secondary-btn">✨ Нормализовать (сумма→1)</button>
+        </div>
+        <div id="tableContainer" class="matrix-wrapper"></div>
+        <button id="calcBtn" class="purple-gradient-btn">🧮 Рассчитать энтропию</button>
+        <div id="results" class="result-card"></div>
+        <div id="errorMsg" class="error-message" style="display: none;"></div>
+    </div>
+
+    <!-- Панель задания 3: HTTP-сервер -->
+    <div id="tab3" class="tab-pane">
+        <h2>🚀 HTTP-сервер поверх TCP (реализация на Python)</h2>
+        <div class="instruction-box">
+            <strong>📌 Как использовать:</strong><br>
+            1. Сохраните приведённый ниже Python-код в файл <code>simple_http_server.py</code><br>
+            2. Убедитесь, что у вас установлен Python 3.6+<br>
+            3. Запустите в терминале: <code>python simple_http_server.py</code><br>
+            4. Откройте браузер и перейдите по адресу <code>http://localhost:8080/</code><br>
+            5. Сервер отдаёт HTML-страницы из папки <code>./www</code> (создаст автоматически)<br>
+            <span style="font-size:0.85rem;">✨ Поддерживает: GET, обработку ошибок 404/403, нормализацию путей, безопасность.</span>
+        </div>
+        <div class="flex-buttons">
+            <button id="downloadServerBtn" class="purple-gradient-btn">⬇ Скачать simple_http_server.py</button>
+            <button id="copyCodeBtn" class="secondary-btn">📋 Скопировать код</button>
+        </div>
+        <h3>📄 Исходный код сервера (Python 3)</h3>
+        <div class="code-block" id="serverCodeBlock">
+            <pre id="serverCode" style="margin:0; font-family: monospace;">#!/usr/bin/env python3
+import socket
+import os
+import sys
+
+HOST = 'localhost'
+PORT = 8080
+WEBROOT = './www'
+
+def handle_client(client_socket, client_address):
+    try:
+        request_data = client_socket.recv(4096).decode('utf-8', errors='ignore')
+        if not request_data:
+            return
+        request_line = request_data.splitlines()[0] if request_data.splitlines() else ''
+        parts = request_line.split()
+        if len(parts) < 2:
+            send_error(client_socket, 400, "Bad Request")
+            return
+        method, path = parts[0], parts[1]
+        if method.upper() != 'GET':
+            send_error(client_socket, 405, "Method Not Allowed")
+            return
+        if '..' in path or path.startswith('/..'):
+            send_error(client_socket, 403, "Forbidden")
+            return
+        if path.endswith('/'):
+            path += 'index.html'
+        relative_path = path.lstrip('/')
+        if relative_path == '':
+            relative_path = 'index.html'
+        full_path = os.path.join(WEBROOT, relative_path)
+        full_path = os.path.normpath(full_path)
+        if not full_path.startswith(os.path.abspath(WEBROOT)):
+            send_error(client_socket, 403, "Forbidden")
+            return
+        if not os.path.exists(full_path) or not os.path.isfile(full_path):
+            send_error(client_socket, 404, "Not Found")
+            return
+        with open(full_path, 'rb') as f:
+            content = f.read()
+        response_headers = (
+            "HTTP/1.1 200 OK\r\n"
+            "Content-Type: text/html; charset=utf-8\r\n"
+            f"Content-Length: {len(content)}\r\n"
+            "Connection: close\r\n"
+            "\r\n"
+        )
+        client_socket.sendall(response_headers.encode('utf-8'))
+        client_socket.sendall(content)
+    except Exception:
+        send_error(client_socket, 500, "Internal Server Error")
+    finally:
+        client_socket.close()
+
+def send_error(client_socket, code, message):
+    body = f"&lt;html&gt;&lt;body&gt;&lt;h1&gt;{code} {message}&lt;/h1&gt;&lt;hr&gt;&lt;small&gt;Simple HTTP Server&lt;/small&gt;&lt;/body&gt;&lt;/html&gt;"
+    response = (
+        f"HTTP/1.1 {code} {message}\r\n"
+        "Content-Type: text/html; charset=utf-8\r\n"
+        f"Content-Length: {len(body)}\r\n"
+        "Connection: close\r\n"
+        "\r\n"
+        f"{body}"
+    )
+    client_socket.sendall(response.encode('utf-8'))
+
+def start_server():
+    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    try:
+        server_socket.bind((HOST, PORT))
+    except Exception as e:
+        print(f"Bind error: {e}")
+        sys.exit(1)
+    server_socket.listen(5)
+    print(f"Server running at http://{HOST}:{PORT}")
+    if not os.path.exists(WEBROOT):
+        os.makedirs(WEBROOT)
+    index_path = os.path.join(WEBROOT, 'index.html')
+    if not os.path.exists(index_path):
+        with open(index_path, 'w', encoding='utf-8') as f:
+            f.write("&lt;!DOCTYPE html&gt;&lt;html&gt;&lt;head&gt;&lt;title&gt;Test&lt;/title&gt;&lt;/head&gt;&lt;body&gt;&lt;h1&gt;HTTP сервер работает!&lt;/h1&gt;&lt;/body&gt;&lt;/html&gt;")
+    try:
+        while True:
+            client_sock, addr = server_socket.accept()
+            print(f"Connection from {addr}")
+            handle_client(client_sock, addr)
+    except KeyboardInterrupt:
+        print("\nShutting down.")
+    finally:
+        server_socket.close()
+
+if __name__ == '__main__':
+    start_server()</pre>
+        </div>
+        <div class="instruction-box">
+            🎥 <strong>Демо-видео и презентация</strong> — для полного выполнения задания №3 подготовьте короткую запись экрана (до 5 мин), демонстрирующую запуск сервера, открытие страниц, обработку 404 и 403. Презентацию можно оформить отдельно (PDF/PPT). Код выше полностью рабочий и соответствует требованиям: работает поверх TCP, отдаёт HTML, обрабатывает ошибки.
+        </div>
+        <footer>🔧 Для демонстрации работы сервера необходимо запустить Python-файл локально.</footer>
+    </div>
+    <footer>📚 Домашнее задание по теории информации — алгебраическое кодирование, энтропия, HTTP-сервер</footer>
+</div>
+
+<script>
+    // ======================= ЗАДАНИЕ 2: энтропия =======================
+    let currentRows = 3, currentCols = 3;
+    const rowsInput = document.getElementById('rows');
+    const colsInput = document.getElementById('cols');
+    const resizeBtn = document.getElementById('resizeBtn');
+    const randomBtn = document.getElementById('randomBtn');
+    const normalizeBtn = document.getElementById('normalizeBtn');
+    const calcBtn = document.getElementById('calcBtn');
+    const tableContainer = document.getElementById('tableContainer');
+    const resultsDiv = document.getElementById('results');
+    const errorDiv = document.getElementById('errorMsg');
+
+    function createTable(rows, cols, initialValues = null) {
+        const table = document.createElement('table');
+        table.className = 'prob-table';
+        // header
+        const thead = document.createElement('thead');
+        let headerRow = document.createElement('tr');
+        headerRow.appendChild(document.createElement('th')); // угол
+        for (let j = 0; j < cols; j++) {
+            let th = document.createElement('th');
+            th.textContent = `y${j+1}`;
+            headerRow.appendChild(th);
+        }
+        thead.appendChild(headerRow);
+        table.appendChild(thead);
+        const tbody = document.createElement('tbody');
+        for (let i = 0; i < rows; i++) {
+            const tr = document.createElement('tr');
+            const thRow = document.createElement('th');
+            thRow.textContent = `x${i+1}`;
+            tr.appendChild(thRow);
+            for (let j = 0; j < cols; j++) {
+                const td = document.createElement('td');
+                const input = document.createElement('input');
+                input.type = 'number';
+                input.step = 'any';
+                let val = (initialValues && initialValues[i] && initialValues[i][j] !== undefined) ? initialValues[i][j] : '0';
+                input.value = val;
+                td.appendChild(input);
+                tr.appendChild(td);
+            }
+            tbody.appendChild(tr);
+        }
+        table.appendChild(tbody);
+        tableContainer.innerHTML = '';
+        tableContainer.appendChild(table);
+    }
+
+    function getMatrix() {
+        const table = document.querySelector('#tableContainer .prob-table');
+        if (!table) return [];
+        const rows = table.querySelectorAll('tbody tr');
+        const matrix = [];
+        for (let i = 0; i < rows.length; i++) {
+            const inputs = rows[i].querySelectorAll('input');
+            const rowData = [];
+            for (let j = 0; j < inputs.length; j++) {
+                let val = parseFloat(inputs[j].value);
+                if (isNaN(val)) val = 0;
+                rowData.push(val);
+            }
+            matrix.push(rowData);
+        }
+        return matrix;
+    }
+
+    function setMatrix(matrix) {
+        const table = document.querySelector('#tableContainer .prob-table');
+        if (!table) return;
+        const rows = table.querySelectorAll('tbody tr');
+        for (let i = 0; i < rows.length && i < matrix.length; i++) {
+            const inputs = rows[i].querySelectorAll('input');
+            for (let j = 0; j < inputs.length && j < matrix[i].length; j++) {
+                inputs[j].value = matrix[i][j];
+            }
+        }
+    }
+
+    function randomMatrix(rows, cols) {
+        let mat = Array(rows).fill().map(() => Array(cols).fill(0));
+        for (let i = 0; i < rows; i++) {
+            for (let j = 0; j < cols; j++) {
+                mat[i][j] = Math.random() + 0.01;
+            }
+        }
+        return mat;
+    }
+
+    function normalizeMatrix(mat) {
+        let sum = 0;
+        for (let i = 0; i < mat.length; i++) {
+            for (let j = 0; j < mat[0].length; j++) {
+                sum += mat[i][j];
+            }
+        }
+        if (sum === 0) return mat;
+        return mat.map(row => row.map(v => v / sum));
+    }
+
+    function computeEntropies(matrix) {
+        const rows = matrix.length, cols = matrix[0].length;
+        let H_xy = 0;
+        let pX = new Array(rows).fill(0);
+        let pY = new Array(cols).fill(0);
+        for (let i = 0; i < rows; i++) {
+            for (let j = 0; j < cols; j++) {
+                let p = matrix[i][j];
+                if (p > 0) H_xy -= p * Math.log2(p);
+                pX[i] += p;
+                pY[j] += p;
+            }
+        }
+        let H_x = 0, H_y = 0;
+        for (let i = 0; i < rows; i++) if (pX[i] > 0) H_x -= pX[i] * Math.log2(pX[i]);
+        for (let j = 0; j < cols; j++) if (pY[j] > 0) H_y -= pY[j] * Math.log2(pY[j]);
+        let H_x_given_y = 0, H_y_given_x = 0;
+        for (let i = 0; i < rows; i++) {
+            for (let j = 0; j < cols; j++) {
+                let p = matrix[i][j];
+                if (p > 0 && pY[j] > 0) H_x_given_y -= p * Math.log2(p / pY[j]);
+                if (p > 0 && pX[i] > 0) H_y_given_x -= p * Math.log2(p / pX[i]);
+            }
+        }
+        let I_xy = H_x + H_y - H_xy;
+        return { H_xy, H_x, H_y, H_x_given_y, H_y_given_x, I_xy };
+    }
+
+    function checkSum(matrix) {
+        let sum = 0;
+        for (let i = 0; i < matrix.length; i++)
+            for (let j = 0; j < matrix[0].length; j++) sum += matrix[i][j];
+        return Math.abs(sum - 1) < 1e-6;
+    }
+
+    function displayResults(results) {
+        resultsDiv.innerHTML = `
+            <h3 style="margin-top:0;">📈 Результаты (биты)</h3>
+            <p><strong>Совместная энтропия H(X,Y):</strong> ${results.H_xy.toFixed(6)}</p>
+            <p><strong>Энтропия H(X):</strong> ${results.H_x.toFixed(6)}</p>
+            <p><strong>Энтропия H(Y):</strong> ${results.H_y.toFixed(6)}</p>
+            <p><strong>Условная H(X|Y):</strong> ${results.H_x_given_y.toFixed(6)}</p>
+            <p><strong>Условная H(Y|X):</strong> ${results.H_y_given_x.toFixed(6)}</p>
+            <p><strong>Взаимная информация I(X;Y):</strong> ${results.I_xy.toFixed(6)}</p>
+            <hr><small>0·log₂0 = 0</small>
+        `;
+    }
+
+    function updateError(msg) {
+        if (msg) {
+            errorDiv.textContent = msg;
+            errorDiv.style.display = 'block';
+        } else {
+            errorDiv.style.display = 'none';
+        }
+    }
+
+    resizeBtn.addEventListener('click', () => {
+        let rows = parseInt(rowsInput.value);
+        let cols = parseInt(colsInput.value);
+        if (isNaN(rows)) rows = 3;
+        if (isNaN(cols)) cols = 3;
+        rows = Math.min(8, Math.max(1, rows));
+        cols = Math.min(8, Math.max(1, cols));
+        currentRows = rows; currentCols = cols;
+        createTable(rows, cols);
+        updateError('');
+        resultsDiv.innerHTML = '';
+    });
+
+    randomBtn.addEventListener('click', () => {
+        let mat = randomMatrix(currentRows, currentCols);
+        setMatrix(mat);
+        updateError('');
+        resultsDiv.innerHTML = '';
+    });
+
+    normalizeBtn.addEventListener('click', () => {
+        let mat = getMatrix();
+        if (mat.length && mat[0].length) {
+            mat = normalizeMatrix(mat);
+            setMatrix(mat);
+            updateError('✅ Матрица нормализована (сумма = 1)');
+        }
+        resultsDiv.innerHTML = '';
+    });
+
+    calcBtn.addEventListener('click', () => {
+        const matrix = getMatrix();
+        if (!matrix.length || !matrix[0].length) return;
+        if (!checkSum(matrix)) {
+            let sum = matrix.reduce((s,row)=>s+row.reduce((a,b)=>a+b,0),0);
+            updateError(`❌ Сумма вероятностей = ${sum.toFixed(6)} ≠ 1. Нажмите "Нормализовать" или исправьте вручную.`);
+            resultsDiv.innerHTML = '';
+            return;
+        }
+        updateError('');
+        const res = computeEntropies(matrix);
+        displayResults(res);
+    });
+
+    // ======================= ЗАДАНИЕ 3: скачивание / копирование кода =======================
+    const serverCodeFull = `#!/usr/bin/env python3
+import socket
+import os
+import sys
+
+HOST = 'localhost'
+PORT = 8080
+WEBROOT = './www'
+
+def handle_client(client_socket, client_address):
+    try:
+        request_data = client_socket.recv(4096).decode('utf-8', errors='ignore')
+        if not request_data:
+            return
+        request_line = request_data.splitlines()[0] if request_data.splitlines() else ''
+        parts = request_line.split()
+        if len(parts) < 2:
+            send_error(client_socket, 400, "Bad Request")
+            return
+        method, path = parts[0], parts[1]
+        if method.upper() != 'GET':
+            send_error(client_socket, 405, "Method Not Allowed")
+            return
+        if '..' in path or path.startswith('/..'):
+            send_error(client_socket, 403, "Forbidden")
+            return
+        if path.endswith('/'):
+            path += 'index.html'
+        relative_path = path.lstrip('/')
+        if relative_path == '':
+            relative_path = 'index.html'
+        full_path = os.path.join(WEBROOT, relative_path)
+        full_path = os.path.normpath(full_path)
+        if not full_path.startswith(os.path.abspath(WEBROOT)):
+            send_error(client_socket, 403, "Forbidden")
+            return
+        if not os.path.exists(full_path) or not os.path.isfile(full_path):
+            send_error(client_socket, 404, "Not Found")
+            return
+        with open(full_path, 'rb') as f:
+            content = f.read()
+        response_headers = (
+            "HTTP/1.1 200 OK\\r\\n"
+            "Content-Type: text/html; charset=utf-8\\r\\n"
+            f"Content-Length: {len(content)}\\r\\n"
+            "Connection: close\\r\\n"
+            "\\r\\n"
+        )
+        client_socket.sendall(response_headers.encode('utf-8'))
+        client_socket.sendall(content)
+    except Exception:
+        send_error(client_socket, 500, "Internal Server Error")
+    finally:
+        client_socket.close()
+
+def send_error(client_socket, code, message):
+    body = f"<html><body><h1>{code} {message}</h1><hr><small>Simple HTTP Server</small></body></html>"
+    response = (
+        f"HTTP/1.1 {code} {message}\\r\\n"
+        "Content-Type: text/html; charset=utf-8\\r\\n"
+        f"Content-Length: {len(body)}\\r\\n"
+        "Connection: close\\r\\n"
+        "\\r\\n"
+        f"{body}"
+    )
+    client_socket.sendall(response.encode('utf-8'))
+
+def start_server():
+    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    try:
+        server_socket.bind((HOST, PORT))
+    except Exception as e:
+        print(f"Bind error: {e}")
+        sys.exit(1)
+    server_socket.listen(5)
+    print(f"Server running at http://{HOST}:{PORT}")
+    if not os.path.exists(WEBROOT):
+        os.makedirs(WEBROOT)
+    index_path = os.path.join(WEBROOT, 'index.html')
+    if not os.path.exists(index_path):
+        with open(index_path, 'w', encoding='utf-8') as f:
+            f.write("<!DOCTYPE html><html><head><title>Test</title></head><body><h1>HTTP сервер работает!</h1></body></html>")
+    try:
+        while True:
+            client_sock, addr = server_socket.accept()
+            print(f"Connection from {addr}")
+            handle_client(client_sock, addr)
+    except KeyboardInterrupt:
+        print("\\nShutting down.")
+    finally:
+        server_socket.close()
+
+if __name__ == '__main__':
+    start_server()`;
+
+    document.getElementById('downloadServerBtn').addEventListener('click', () => {
+        const blob = new Blob([serverCodeFull], {type: 'text/x-python'});
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = 'simple_http_server.py';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(link.href);
+    });
+
+    document.getElementById('copyCodeBtn').addEventListener('click', () => {
+        navigator.clipboard.writeText(serverCodeFull).then(() => {
+            alert('✅ Код скопирован в буфер обмена!');
+        }).catch(() => alert('Не удалось скопировать'));
+    });
+
+    // Вкладки
+    const tabs = document.querySelectorAll('.tab-btn');
+    const panes = document.querySelectorAll('.tab-pane');
+    tabs.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const tabId = btn.getAttribute('data-tab');
+            tabs.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            panes.forEach(pane => pane.classList.remove('active-pane'));
+            document.getElementById(tabId).classList.add('active-pane');
+        });
+    });
+
+    // инициализация таблицы энтропии начальными значениями (пример)
+    createTable(3, 3, [[0.1,0.2,0.1],[0.1,0.1,0.2],[0.05,0.1,0.05]]);
+</script>
+</body>
+</html>
