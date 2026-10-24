@@ -1,539 +1,124 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Теория информации — Задания 2 и 3</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        body {
-            font-family: 'Segoe UI', Roboto, system-ui;
-            background: linear-gradient(145deg, #f5f0ff 0%, #ede7ff 100%);
-            min-height: 100vh;
-            padding: 2rem 1rem;
-        }
-        .glass-container {
-            max-width: 1300px;
-            margin: 0 auto;
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 2rem;
-            box-shadow: 0 20px 35px -12px rgba(98, 0, 128, 0.2);
-            overflow: hidden;
-        }
-        .tab-bar {
-            display: flex;
-            background: white;
-            border-bottom: 2px solid #e2d5ff;
-            padding: 0 1.5rem;
-            gap: 0.5rem;
-        }
-        .tab-btn {
-            background: transparent;
-            border: none;
-            font-size: 1.1rem;
-            font-weight: 600;
-            padding: 1rem 2rem;
-            cursor: pointer;
-            color: #5b4a7a;
-            transition: 0.2s;
-            border-radius: 2rem 2rem 0 0;
-        }
-        .tab-btn.active {
-            color: #7c3aed;
-            border-bottom: 3px solid #9b4dff;
-            background: #fbfaff;
-        }
-        .tab-pane {
-            display: none;
-            padding: 2rem;
-            animation: fade 0.2s;
-        }
-        .active-pane {
-            display: block;
-        }
-        @keyframes fade {
-            from { opacity: 0; transform: translateY(5px);}
-            to { opacity: 1; transform: translateY(0);}
-        }
-        h2 {
-            color: #3c2a5f;
-            border-left: 6px solid #aa5eff;
-            padding-left: 1rem;
-            margin-bottom: 1.5rem;
-        }
-        h3 {
-            color: #4a3a6e;
-            margin: 1rem 0 0.5rem;
-        }
-        .purple-btn {
-            background: linear-gradient(95deg, #8b5cf6, #a855f7);
-            border: none;
-            color: white;
-            font-weight: 600;
-            padding: 8px 18px;
-            border-radius: 40px;
-            cursor: pointer;
-            transition: 0.2s;
-            margin: 5px;
-        }
-        .secondary-btn {
-            background: #ede9fe;
-            color: #6b21a5;
-            border: 1px solid #cba6ff;
-            padding: 8px 18px;
-            border-radius: 40px;
-            cursor: pointer;
-        }
-        .matrix-wrapper {
-            overflow-x: auto;
-            margin: 1rem 0;
-        }
-        .prob-table {
-            border-collapse: collapse;
-            background: white;
-            border-radius: 20px;
-            width: 100%;
-        }
-        .prob-table th, .prob-table td {
-            border: 1px solid #d9cef0;
-            padding: 8px;
-            text-align: center;
-        }
-        .prob-table input {
-            width: 70px;
-            padding: 6px;
-            text-align: center;
-            border-radius: 12px;
-            border: 1px solid #cdc0e0;
-        }
-        .result-card {
-            background: #fbfaff;
-            border-radius: 24px;
-            padding: 1rem;
-            margin-top: 1.5rem;
-            border: 1px solid #e2d5ff;
-        }
-        .code-block {
-            background: #1e1a2f;
-            color: #e2e2ff;
-            padding: 1rem;
-            border-radius: 20px;
-            font-family: 'Courier New', monospace;
-            font-size: 0.75rem;
-            overflow-x: auto;
-            margin: 1rem 0;
-            white-space: pre-wrap;
-            word-break: break-all;
-        }
-        .instruction-box {
-            background: #f0ebff;
-            border-left: 5px solid #9b4dff;
-            padding: 1rem;
-            border-radius: 16px;
-            margin: 1rem 0;
-        }
-        .error-message {
-            color: #dc2626;
-            background: #fee2e2;
-            padding: 8px 12px;
-            border-radius: 28px;
-            margin-top: 10px;
-        }
-        .success-message {
-            color: #15803d;
-            background: #dcfce7;
-            padding: 8px 12px;
-            border-radius: 28px;
-        }
-    </style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0e141d" />
+  <title>Волчонок Тимка — мой говорящий волк</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🐺</text></svg>" />
+  <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
-<div class="glass-container">
-    <div class="tab-bar">
-        <button class="tab-btn active" data-tab="tab2">📊 Задание №2 — Энтропия</button>
-        <button class="tab-btn" data-tab="tab3">🌐 Задание №3 — HTTP-сервер (TCP)</button>
+  <div id="app">
+    <header id="hud">
+      <div class="brand">
+        <div class="avatar">🐺</div>
+        <div class="brand-text">
+          <div class="pet-name" id="petName">Тимка</div>
+          <div class="coins" id="coins"><span class="coin-ico">🪙</span><b id="coinValue">0</b></div>
+        </div>
+      </div>
+
+      <div class="stats" id="stats"></div>
+
+      <div class="hud-tools">
+        <button class="icon-btn" id="soundBtn" title="Звук" aria-label="Звук">🔊</button>
+        <button class="icon-btn" id="helpBtn" title="Как играть" aria-label="Как играть">❓</button>
+        <button class="icon-btn" id="resetBtn" title="Начать заново" aria-label="Начать заново">↺</button>
+      </div>
+    </header>
+
+    <main id="stage">
+      <canvas id="scene"></canvas>
+
+      <div id="roomLabel" class="room-label">
+        <span id="roomEmoji">🛋️</span><span id="roomName">Зал</span>
+      </div>
+
+      <div class="hint" id="hint">Нажми на Тимку, чтобы погладить</div>
+
+      <div id="actionBar" class="action-bar"></div>
+      <div id="toasts" class="toasts"></div>
+      <div id="foodPanel" class="food-panel hidden"></div>
+
+      <nav id="rooms" class="rooms" aria-label="Локации"></nav>
+    </main>
+  </div>
+
+  <div id="minigames" class="overlay hidden" aria-hidden="true">
+    <div class="mg-panel">
+      <div class="mg-head">
+        <div>
+          <div class="mg-title">Мини-игры</div>
+          <div class="mg-sub">Играй, зарабатывай монетки и поднимай настроение</div>
+        </div>
+        <button class="icon-btn" id="mgClose" title="Закрыть" aria-label="Закрыть">✕</button>
+      </div>
+
+      <div id="mgMenu" class="mg-menu"></div>
+
+      <div id="mgStage" class="mg-stage hidden">
+        <div class="mg-stage-head">
+          <button class="pill" id="mgBack">← К списку</button>
+          <div class="mg-score" id="mgStatus">0</div>
+        </div>
+        <div id="mgRoot" class="mg-root"></div>
+        <div id="mgResult" class="mg-result hidden">
+          <div class="mg-result-card">
+            <div class="mg-result-title" id="mgResultTitle">Игра окончена!</div>
+            <div class="mg-result-score" id="mgResultScore">0</div>
+            <div class="mg-result-sub" id="mgResultSub"></div>
+            <div class="mg-result-reward" id="mgResultReward">🪙 +0</div>
+            <div class="mg-result-btns">
+              <button class="btn primary" id="mgAgain">Ещё раз</button>
+              <button class="btn" id="mgToMenu">К списку</button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
+  </div>
 
-    <!-- ЗАДАНИЕ 2: энтропия -->
-    <div id="tab2" class="tab-pane active-pane">
-        <h2>Расчёт энтропии двух зависимых систем</h2>
-        <p>Матрица совместных вероятностей P(X,Y). Сумма всех элементов = 1.</p>
-        <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px;">
-            <label>Строк (X): <input type="number" id="rows" value="3" min="1" max="6" style="width:70px"></label>
-            <label>Столбцов (Y): <input type="number" id="cols" value="3" min="1" max="6" style="width:70px"></label>
-            <button id="resizeBtn" class="purple-btn">Создать таблицу</button>
-            <button id="randomBtn" class="secondary-btn">Случайные</button>
-            <button id="normalizeBtn" class="secondary-btn">Нормализовать</button>
-            <button id="calcBtn" class="purple-btn">Рассчитать энтропию</button>
+  <div id="help" class="overlay hidden" aria-hidden="true">
+    <div class="help-panel">
+      <div class="help-head">
+        <div class="mg-title">Как играть</div>
+        <button class="icon-btn" id="helpClose" aria-label="Закрыть">✕</button>
+      </div>
+      <div class="help-body">
+        <p>Знакомься — это <b>волчонок Тимка</b>. О нём нужно заботиться: кормить, укладывать спать, мыть, водить в туалет и, конечно, играть с ним.</p>
+        <div class="help-grid">
+          <div class="help-card"><div class="hi">🛋️</div><b>Зал</b><span>Общайся с Тимкой, гладь его и запускай мини-игры. Можно включить телевизор.</span></div>
+          <div class="help-card"><div class="hi">🍳</div><b>Кухня</b><span>Корми волчонка. Каша бесплатная, лакомства — за монетки.</span></div>
+          <div class="help-card"><div class="hi">🚽</div><b>Ванная</b><span>Отведи в туалет и помой, когда он испачкается.</span></div>
+          <div class="help-card"><div class="hi">🛏️</div><b>Спальня</b><span>Уложи спать, чтобы восстановить энергию. Сон можно ускорить кнопкой «Разбудить».</span></div>
         </div>
-        <div id="tableContainer" class="matrix-wrapper"></div>
-        <div id="results" class="result-card"></div>
-        <div id="errorMsg" class="error-message" style="display: none;"></div>
+        <p><b>Совет:</b> кликай по предметам в комнате — чашка с едой, кровать, унитаз и ванна тоже работают. Следи за шкалой «Туалет»: если она опустеет, Тимка расстроится.</p>
+        <p class="muted">Прогресс сохраняется автоматически в этом браузере.</p>
+      </div>
+      <div class="help-foot">
+        <button class="btn primary" id="helpOk">Понятно!</button>
+      </div>
     </div>
+  </div>
 
-    <!-- ЗАДАНИЕ 3: HTTP-сервер -->
-    <div id="tab3" class="tab-pane">
-        <h2>HTTP-сервер поверх TCP (реализация на Python)</h2>
-        <div class="instruction-box">
-            <strong>📌 Как запустить и продемонстрировать (чтобы увидеть 200, 404 и 403):</strong><br>
-            1️⃣ Скачайте <code>simple_http_server.py</code> (кнопка ниже).<br>
-            2️⃣ Убедитесь, что установлен Python 3.6+.<br>
-            3️⃣ Запустите в терминале: <code>python simple_http_server.py</code><br>
-            4️⃣ Сервер создаст папку <code>www</code> с двумя файлами: <code>index.html</code> и <code>page2.html</code>.<br>
-            5️⃣ Откройте браузер и последовательно перейдите по адресам:
-            <ul>
-                <li><code>http://localhost:8080/</code> → главная страница (<strong>200 OK</strong>)</li>
-                <li><code>http://localhost:8080/page2.html</code> → вторая страница (<strong>200 OK</strong>)</li>
-                <li><code>http://localhost:8080/notexist.html</code> → ошибка <strong>404 Not Found</strong></li>
-                <li><code>http://localhost:8080/../secret.txt</code> → ошибка <strong>403 Forbidden</strong> (попытка выйти из корня)</li>
-        
-        </div>
-        <div style="display: flex; gap: 15px; flex-wrap: wrap; margin: 15px 0;">
-            <button id="downloadServerBtn" class="purple-btn">⬇ Скачать simple_http_server.py</button>
-            <button id="copyCodeBtn" class="secondary-btn">📋 Скопировать код в буфер</button>
-        </div>
-        <h3>🐍 Исходный код сервера (Python)</h3>
-        <div class="code-block" id="serverCodeBlock">
-            <pre id="serverCode" style="margin:0;">Загрузка...</pre>
-        </div>
-    
-        </div>
-    </div>
-</div>
+  <noscript><div class="noscript">Для игры нужен включённый JavaScript.</div></noscript>
 
-<script>
-    // ======================= ЗАДАНИЕ 2 =======================
-    let currentRows = 3, currentCols = 3;
-    const rowsInput = document.getElementById('rows');
-    const colsInput = document.getElementById('cols');
-    const resizeBtn = document.getElementById('resizeBtn');
-    const randomBtn = document.getElementById('randomBtn');
-    const normalizeBtn = document.getElementById('normalizeBtn');
-    const calcBtn = document.getElementById('calcBtn');
-    const tableContainer = document.getElementById('tableContainer');
-    const resultsDiv = document.getElementById('results');
-    const errorMsg = document.getElementById('errorMsg');
-
-    function createTable(rows, cols, init = null) {
-        let html = '<table class="prob-table"><thead><tr><th></th>';
-        for (let j = 0; j < cols; j++) html += `<th>y${j+1}</th>`;
-        html += '</tr></thead><tbody>';
-        for (let i = 0; i < rows; i++) {
-            html += `<tr><th>x${i+1}</th>`;
-            for (let j = 0; j < cols; j++) {
-                let val = (init && init[i] && init[i][j] !== undefined) ? init[i][j] : '0';
-                html += `<td><input type="number" step="any" value="${val}"></td>`;
-            }
-            html += '</tr>';
-        }
-        html += '</tbody></table>';
-        tableContainer.innerHTML = html;
-    }
-
-    function getMatrix() {
-        const table = document.querySelector('#tableContainer .prob-table');
-        if (!table) return [];
-        const rows = table.querySelectorAll('tbody tr');
-        const mat = [];
-        for (let i = 0; i < rows.length; i++) {
-            const inputs = rows[i].querySelectorAll('input');
-            const row = [];
-            for (let j = 0; j < inputs.length; j++) {
-                let val = parseFloat(inputs[j].value);
-                if (isNaN(val)) val = 0;
-                row.push(val);
-            }
-            mat.push(row);
-        }
-        return mat;
-    }
-
-    function setMatrix(mat) {
-        const table = document.querySelector('#tableContainer .prob-table');
-        if (!table) return;
-        const rows = table.querySelectorAll('tbody tr');
-        for (let i = 0; i < rows.length && i < mat.length; i++) {
-            const inputs = rows[i].querySelectorAll('input');
-            for (let j = 0; j < inputs.length && j < mat[i].length; j++) {
-                inputs[j].value = mat[i][j];
-            }
-        }
-    }
-
-    function randomMatrix(rows, cols) {
-        let mat = Array(rows).fill().map(() => Array(cols).fill(0));
-        for (let i = 0; i < rows; i++)
-            for (let j = 0; j < cols; j++)
-                mat[i][j] = Math.random() + 0.01;
-        return mat;
-    }
-
-    function normalizeMatrix(mat) {
-        let sum = 0;
-        for (let i = 0; i < mat.length; i++)
-            for (let j = 0; j < mat[0].length; j++) sum += mat[i][j];
-        if (sum === 0) return mat;
-        return mat.map(row => row.map(v => v / sum));
-    }
-
-    function computeEntropies(mat) {
-        const rows = mat.length, cols = mat[0].length;
-        let H_xy = 0;
-        let pX = new Array(rows).fill(0);
-        let pY = new Array(cols).fill(0);
-        for (let i = 0; i < rows; i++) {
-            for (let j = 0; j < cols; j++) {
-                let p = mat[i][j];
-                if (p > 0) H_xy -= p * Math.log2(p);
-                pX[i] += p;
-                pY[j] += p;
-            }
-        }
-        let H_x = 0, H_y = 0;
-        for (let i = 0; i < rows; i++) if (pX[i] > 0) H_x -= pX[i] * Math.log2(pX[i]);
-        for (let j = 0; j < cols; j++) if (pY[j] > 0) H_y -= pY[j] * Math.log2(pY[j]);
-        let H_xgy = 0, H_ygx = 0;
-        for (let i = 0; i < rows; i++) {
-            for (let j = 0; j < cols; j++) {
-                let p = mat[i][j];
-                if (p > 0 && pY[j] > 0) H_xgy -= p * Math.log2(p / pY[j]);
-                if (p > 0 && pX[i] > 0) H_ygx -= p * Math.log2(p / pX[i]);
-            }
-        }
-        let I_xy = H_x + H_y - H_xy;
-        return { H_xy, H_x, H_y, H_x_given_y: H_xgy, H_y_given_x: H_ygx, I_xy };
-    }
-
-    function checkSum(mat) {
-        let sum = 0;
-        for (let i = 0; i < mat.length; i++)
-            for (let j = 0; j < mat[0].length; j++) sum += mat[i][j];
-        return Math.abs(sum - 1) < 1e-6;
-    }
-
-    function displayResults(res) {
-        resultsDiv.innerHTML = `
-            <h3>📈 Результаты (биты)</h3>
-            <p><strong>Совместная энтропия H(X,Y):</strong> ${res.H_xy.toFixed(6)}</p>
-            <p><strong>Энтропия H(X):</strong> ${res.H_x.toFixed(6)}</p>
-            <p><strong>Энтропия H(Y):</strong> ${res.H_y.toFixed(6)}</p>
-            <p><strong>Условная H(X|Y):</strong> ${res.H_x_given_y.toFixed(6)}</p>
-            <p><strong>Условная H(Y|X):</strong> ${res.H_y_given_x.toFixed(6)}</p>
-            <p><strong>Взаимная информация I(X;Y):</strong> ${res.I_xy.toFixed(6)}</p>
-            <hr><small>0·log₂0 = 0</small>
-        `;
-    }
-
-    function showError(msg) {
-        errorMsg.textContent = msg;
-        errorMsg.style.display = 'block';
-    }
-
-    function hideError() {
-        errorMsg.style.display = 'none';
-    }
-
-    resizeBtn.addEventListener('click', () => {
-        let r = Math.min(6, Math.max(1, parseInt(rowsInput.value) || 3));
-        let c = Math.min(6, Math.max(1, parseInt(colsInput.value) || 3));
-        currentRows = r;
-        currentCols = c;
-        createTable(r, c);
-        hideError();
-        resultsDiv.innerHTML = '';
-    });
-
-    randomBtn.addEventListener('click', () => {
-        let mat = randomMatrix(currentRows, currentCols);
-        setMatrix(mat);
-        hideError();
-        resultsDiv.innerHTML = '';
-    });
-
-    normalizeBtn.addEventListener('click', () => {
-        let mat = getMatrix();
-        if (mat.length) {
-            let norm = normalizeMatrix(mat);
-            setMatrix(norm);
-            showError('✅ Матрица нормализована (сумма = 1)');
-            setTimeout(hideError, 2000);
-        }
-        resultsDiv.innerHTML = '';
-    });
-
-    calcBtn.addEventListener('click', () => {
-        const mat = getMatrix();
-        if (!mat.length || !mat[0].length) return;
-        if (!checkSum(mat)) {
-            let sum = mat.reduce((s, row) => s + row.reduce((a, b) => a + b, 0), 0);
-            showError(`❌ Сумма вероятностей = ${sum.toFixed(6)} ≠ 1. Нажмите "Нормализовать".`);
-            resultsDiv.innerHTML = '';
-            return;
-        }
-        hideError();
-        const res = computeEntropies(mat);
-        displayResults(res);
-    });
-
-    // инициализация таблицы для задания 2
-    createTable(3, 3, [[0.1, 0.2, 0.1], [0.1, 0.1, 0.2], [0.05, 0.1, 0.05]]);
-
-    // ======================= ЗАДАНИЕ 3 =======================
-    const serverCode = `#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-import socket
-import os
-import sys
-
-HOST = 'localhost'
-PORT = 8080
-WEBROOT = './www'
-
-def handle_client(client_socket, client_address):
-    try:
-        request_data = client_socket.recv(4096).decode('utf-8', errors='ignore')
-        if not request_data:
-            return
-        request_line = request_data.splitlines()[0] if request_data.splitlines() else ''
-        parts = request_line.split()
-        if len(parts) < 2:
-            send_error(client_socket, 400, "Bad Request")
-            return
-        method, path = parts[0], parts[1]
-        if method.upper() != 'GET':
-            send_error(client_socket, 405, "Method Not Allowed")
-            return
-        # Защита от обхода корневой директории
-        if '..' in path or path.startswith('/..'):
-            send_error(client_socket, 403, "Forbidden")
-            return
-        if path.endswith('/'):
-            path += 'index.html'
-        relative_path = path.lstrip('/')
-        if relative_path == '':
-            relative_path = 'index.html'
-        full_path = os.path.join(WEBROOT, relative_path)
-        full_path = os.path.normpath(full_path)
-        # Дополнительная проверка: путь должен начинаться с абсолютного пути WEBROOT
-        abs_webroot = os.path.abspath(WEBROOT)
-        if not os.path.abspath(full_path).startswith(abs_webroot):
-            send_error(client_socket, 403, "Forbidden")
-            return
-        if not os.path.exists(full_path) or not os.path.isfile(full_path):
-            send_error(client_socket, 404, "Not Found")
-            return
-        with open(full_path, 'rb') as f:
-            content = f.read()
-        response_headers = (
-            "HTTP/1.1 200 OK\\r\\n"
-            "Content-Type: text/html; charset=utf-8\\r\\n"
-            f"Content-Length: {len(content)}\\r\\n"
-            "Connection: close\\r\\n"
-            "\\r\\n"
-        )
-        client_socket.sendall(response_headers.encode('utf-8'))
-        client_socket.sendall(content)
-    except Exception:
-        send_error(client_socket, 500, "Internal Server Error")
-    finally:
-        client_socket.close()
-
-def send_error(client_socket, code, message):
-    body = f"<html><body><h1>{code} {message}</h1><hr><small>Simple HTTP Server</small></body></html>"
-    response = (
-        f"HTTP/1.1 {code} {message}\\r\\n"
-        "Content-Type: text/html; charset=utf-8\\r\\n"
-        f"Content-Length: {len(body)}\\r\\n"
-        "Connection: close\\r\\n"
-        "\\r\\n"
-        f"{body}"
-    )
-    client_socket.sendall(response.encode('utf-8'))
-
-def start_server():
-    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    try:
-        server_socket.bind((HOST, PORT))
-    except Exception as e:
-        print(f"Bind error: {e}")
-        sys.exit(1)
-    server_socket.listen(5)
-    print(f"Server running at http://{HOST}:{PORT}")
-    print(f"Webroot: {os.path.abspath(WEBROOT)}")
-    # Создаём webroot и примеры страниц, если их нет
-    if not os.path.exists(WEBROOT):
-        os.makedirs(WEBROOT)
-    index_path = os.path.join(WEBROOT, 'index.html')
-    if not os.path.exists(index_path):
-        with open(index_path, 'w', encoding='utf-8') as f:
-            f.write('''<!DOCTYPE html>
-<html>
-<head><title>Главная</title></head>
-<body>
-<h1>HTTP-сервер работает!</h1>
-<p>Это страница index.html</p>
-<a href="page2.html">Перейти на page2.html</a>
-</body>
-</html>''')
-    page2_path = os.path.join(WEBROOT, 'page2.html')
-    if not os.path.exists(page2_path):
-        with open(page2_path, 'w', encoding='utf-8') as f:
-            f.write('''<!DOCTYPE html>
-<html>
-<head><title>Вторая страница</title></head>
-<body>
-<h1>Вторая страница</h1>
-<p>Если вы её видите, сервер отдаёт разные HTML-файлы.</p>
-<a href="/">Назад</a>
-</body>
-</html>''')
-    try:
-        while True:
-            client_sock, addr = server_socket.accept()
-            print(f"Connection from {addr}")
-            handle_client(client_sock, addr)
-    except KeyboardInterrupt:
-        print("\\nShutting down.")
-    finally:
-        server_socket.close()
-
-if __name__ == '__main__':
-    start_server()`;
-
-    document.getElementById('serverCode').innerText = serverCode;
-    document.getElementById('downloadServerBtn').addEventListener('click', () => {
-        const blob = new Blob([serverCode], {type: 'text/x-python'});
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = 'simple_http_server.py';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(link.href);
-    });
-    document.getElementById('copyCodeBtn').addEventListener('click', () => {
-        navigator.clipboard.writeText(serverCode).then(() => {
-            alert('✅ Код скопирован в буфер обмена');
-        }).catch(() => alert('❌ Не удалось скопировать'));
-    });
-
-    // Переключение вкладок
-    const tabs = document.querySelectorAll('.tab-btn');
-    const panes = document.querySelectorAll('.tab-pane');
-    tabs.forEach(btn => {
-        btn.addEventListener('click', () => {
-            const tabId = btn.getAttribute('data-tab');
-            tabs.forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            panes.forEach(pane => pane.classList.remove('active-pane'));
-            document.getElementById(tabId).classList.add('active-pane');
-        });
-    });
-</script>
+  <script src="js/util.js"></script>
+  <script src="js/save.js"></script>
+  <script src="js/wolf.js"></script>
+  <script src="js/rooms.js"></script>
+  <script src="js/minigames.js"></script>
+  <script src="js/mg-bones.js"></script>
+  <script src="js/mg-bubbles.js"></script>
+  <script src="js/mg-memory.js"></script>
+  <script src="js/mg-fishing.js"></script>
+  <script src="js/mg-runner.js"></script>
+  <script src="js/mg-whack.js"></script>
+  <script src="js/mg-snake.js"></script>
+  <script src="js/mg-puzzle.js"></script>
+  <script src="js/mg-target.js"></script>
+  <script src="js/mg-simon.js"></script>
+  <script src="js/game.js"></script>
 </body>
 </html>
